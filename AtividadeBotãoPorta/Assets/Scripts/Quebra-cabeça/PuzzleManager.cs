@@ -4,28 +4,37 @@ using UnityEngine.SceneManagement;
 
 public class PuzzleManager : MonoBehaviour
 {
-    private List<ICommand> replayCommands = new List<ICommand>();
+    // Usamos static para persistir entre cenas
+    private static List<ICommand> savedReplayCommands = new List<ICommand>();
+    private static bool shouldPlayReplay = false;
 
+    private List<ICommand> replayCommands = new List<ICommand>();
     private Stack<ICommand> commandHistory = new Stack<ICommand>();
 
-    public List<PuzzlePiece> pieces; // Agora usamos PuzzlePiece diretamente
+    public List<PuzzlePiece> pieces;
     private PuzzlePiece selectedPiece = null;
 
     private void Start()
     {
+        if (shouldPlayReplay)
+        {
+            replayCommands = new List<ICommand>(savedReplayCommands);
+            StartCoroutine(ReplayCoroutine());
+            shouldPlayReplay = false;
+            return;
+        }
+
         ShufflePieces();
     }
 
     void ShufflePieces()
     {
-        // Cria uma lista de índices
         List<int> indices = new List<int>();
         for (int i = 0; i < pieces.Count; i++)
         {
             indices.Add(i);
         }
 
-        // Embaralha os índices
         for (int i = 0; i < indices.Count; i++)
         {
             int temp = indices[i];
@@ -34,10 +43,9 @@ public class PuzzleManager : MonoBehaviour
             indices[randomIndex] = temp;
         }
 
-        // Aplica a nova ordem visual (GridLayout usa SiblingIndex)
         for (int i = 0; i < pieces.Count; i++)
         {
-            pieces[i].SetIndex(indices[i]); // atualiza currentIndex e posição visual
+            pieces[i].SetIndex(indices[i]);
         }
     }
 
@@ -64,7 +72,8 @@ public class PuzzleManager : MonoBehaviour
         command.Execute();
         commandHistory.Push(command);
         replayCommands.Add(command);
-        CheckVictory(); 
+
+        StartCoroutine(DelayedCheckVictory());
     }
 
     public void Undo()
@@ -76,32 +85,37 @@ public class PuzzleManager : MonoBehaviour
         }
     }
 
-    public void StartReplay()
+    public void Replay()
     {
-        StartCoroutine(ReplayCoroutine());
+        // Chamado pelo botão da MsgVitoria
+        savedReplayCommands = new List<ICommand>(replayCommands);
+        shouldPlayReplay = true;
+        SceneManager.LoadScene("Puzzle");
     }
 
     private System.Collections.IEnumerator ReplayCoroutine()
     {
-        // Resetar o puzzle
-        ResetPuzzle();
-
-        // Esperar um segundo antes de começar
         yield return new WaitForSeconds(1f);
-
         foreach (ICommand command in replayCommands)
         {
             command.Execute();
             yield return new WaitForSeconds(1f);
         }
 
+        StartCoroutine(DelayedCheckVictory());
     }
 
     public void ResetPuzzle()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene("Puzzle");
     }
-    
+
+    private System.Collections.IEnumerator DelayedCheckVictory()
+    {
+        yield return null;
+        CheckVictory();
+    }
+
     private void CheckVictory()
     {
         foreach (var piece in pieces)
@@ -109,7 +123,8 @@ public class PuzzleManager : MonoBehaviour
             if (!piece.IsInCorrectPosition())
                 return;
         }
+
+        Debug.Log("Vitória detectada! Mudando para MsgVitoria");
         SceneManager.LoadScene("MsgVitoria");
     }
-
 }
