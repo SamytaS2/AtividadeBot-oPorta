@@ -1,30 +1,25 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 public class PuzzleManager : MonoBehaviour
 {
-    // Usamos static para persistir entre cenas
-    private static List<ICommand> savedReplayCommands = new List<ICommand>();
-    private static bool shouldPlayReplay = false;
-
-    private List<ICommand> replayCommands = new List<ICommand>();
-    private Stack<ICommand> commandHistory = new Stack<ICommand>();
-
     public List<PuzzlePiece> pieces;
     private PuzzlePiece selectedPiece = null;
 
     private void Start()
     {
-        if (shouldPlayReplay)
+        if (ReplayData.ShouldPlayReplay)
         {
-            replayCommands = new List<ICommand>(savedReplayCommands);
             StartCoroutine(ReplayCoroutine());
-            shouldPlayReplay = false;
-            return;
+            ReplayData.ShouldPlayReplay = false;
         }
-
-        ShufflePieces();
+        else
+        {
+            ShufflePieces();
+            ReplayData.SwapHistory.Clear(); // limpa se for jogo novo
+        }
     }
 
     void ShufflePieces()
@@ -70,36 +65,34 @@ public class PuzzleManager : MonoBehaviour
     {
         ICommand command = new SwapCommand(a, b);
         command.Execute();
-        commandHistory.Push(command);
-        replayCommands.Add(command);
+
+        // Salva os índices trocados
+        ReplayData.SwapHistory.Add((a.currentIndex, b.currentIndex));
 
         StartCoroutine(DelayedCheckVictory());
     }
 
-    public void Undo()
-    {
-        if (selectedPiece == null && commandHistory.Count > 0)
-        {
-            ICommand lastCommand = commandHistory.Pop();
-            lastCommand.Undo();
-        }
-    }
-
     public void Replay()
     {
-        // Chamado pelo botão da MsgVitoria
-        savedReplayCommands = new List<ICommand>(replayCommands);
-        shouldPlayReplay = true;
+        ReplayData.ShouldPlayReplay = true;
         SceneManager.LoadScene("Puzzle");
     }
 
-    private System.Collections.IEnumerator ReplayCoroutine()
+    private IEnumerator ReplayCoroutine()
     {
         yield return new WaitForSeconds(1f);
-        foreach (ICommand command in replayCommands)
+
+        foreach (var swap in ReplayData.SwapHistory)
         {
-            command.Execute();
-            yield return new WaitForSeconds(1f);
+            var pieceA = pieces.Find(p => p.currentIndex == swap.Item1);
+            var pieceB = pieces.Find(p => p.currentIndex == swap.Item2);
+
+            if (pieceA != null && pieceB != null)
+            {
+                ICommand command = new SwapCommand(pieceA, pieceB);
+                command.Execute();
+                yield return new WaitForSeconds(1f);
+            }
         }
 
         StartCoroutine(DelayedCheckVictory());
@@ -107,10 +100,11 @@ public class PuzzleManager : MonoBehaviour
 
     public void ResetPuzzle()
     {
+        ReplayData.SwapHistory.Clear();
         SceneManager.LoadScene("Puzzle");
     }
 
-    private System.Collections.IEnumerator DelayedCheckVictory()
+    private IEnumerator DelayedCheckVictory()
     {
         yield return null;
         CheckVictory();
@@ -124,7 +118,6 @@ public class PuzzleManager : MonoBehaviour
                 return;
         }
 
-        Debug.Log("Vitória detectada! Mudando para MsgVitoria");
         SceneManager.LoadScene("MsgVitoria");
     }
 }
