@@ -1451,6 +1451,37 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7411750549495003059, guid: 594a4e9a42250c84aa52ff8522dd2c1f, type: 3}
   m_PrefabInstance: {fileID: 1119376298}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1186260171
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1186260172}
+  m_Layer: 0
+  m_Name: ReplayManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1186260172
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1186260171}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 412.00333, y: 184.97865, z: -1.8524011}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1208327606 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4719961458006719624, guid: 594a4e9a42250c84aa52ff8522dd2c1f, type: 3}
@@ -2956,3 +2987,4 @@ SceneRoots:
   - {fileID: 370975880}
   - {fileID: 1767774560}
   - {fileID: 2146432630}
+  - {fileID: 1186260172}

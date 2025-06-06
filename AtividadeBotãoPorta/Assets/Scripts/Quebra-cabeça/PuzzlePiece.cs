@@ -31,7 +31,7 @@ public class PuzzlePiece : MonoBehaviour, IPointerClickHandler
     /// </summary>
     public void OnPointerClick(PointerEventData eventData)
     {
-        PuzzleManager manager = FindFirstObjectByType<PuzzleManager>();
+        PuzzleManager manager = FindObjectOfType<PuzzleManager>();
 
         if (manager != null)
         {

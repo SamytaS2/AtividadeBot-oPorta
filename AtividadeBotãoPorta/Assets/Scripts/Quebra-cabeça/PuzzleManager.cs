@@ -5,20 +5,30 @@ using UnityEngine.SceneManagement;
 
 public class PuzzleManager : MonoBehaviour
 {
+    // Lista estática para salvar os swaps entre cenas para replay
+    private static List<(int, int)> savedSwaps = new List<(int, int)>();
+    private static bool shouldPlayReplay = false;
+
+    private List<(int, int)> currentSwaps = new List<(int, int)>();
+    private Stack<ICommand> commandHistory = new Stack<ICommand>();
+
     public List<PuzzlePiece> pieces;
     private PuzzlePiece selectedPiece = null;
 
     private void Start()
     {
-        if (ReplayData.ShouldPlayReplay)
+        // Busca todas as peças na cena para garantir que a lista esteja preenchida
+        pieces = new List<PuzzlePiece>(FindObjectsOfType<PuzzlePiece>());
+
+        if (shouldPlayReplay)
         {
+            shouldPlayReplay = false;
             StartCoroutine(ReplayCoroutine());
-            ReplayData.ShouldPlayReplay = false;
         }
         else
         {
+            savedSwaps.Clear(); // limpa swaps antigos
             ShufflePieces();
-            ReplayData.SwapHistory.Clear(); // limpa se for jogo novo
         }
     }
 
@@ -65,16 +75,33 @@ public class PuzzleManager : MonoBehaviour
     {
         ICommand command = new SwapCommand(a, b);
         command.Execute();
+        commandHistory.Push(command);
 
-        // Salva os índices trocados
-        ReplayData.SwapHistory.Add((a.currentIndex, b.currentIndex));
+        // Salva o swap para replay
+        currentSwaps.Add((a.currentIndex, b.currentIndex));
 
         StartCoroutine(DelayedCheckVictory());
     }
 
+    public void Undo()
+    {
+        if (selectedPiece == null && commandHistory.Count > 0)
+        {
+            ICommand lastCommand = commandHistory.Pop();
+            lastCommand.Undo();
+        }
+    }
+
+    public static void PrepareReplay()
+    {
+        shouldPlayReplay = true;
+    }
+
+    // Chamado pelo botão Replay na cena MsgVitoria
     public void Replay()
     {
-        ReplayData.ShouldPlayReplay = true;
+        savedSwaps = new List<(int, int)>(currentSwaps);
+        shouldPlayReplay = true;
         SceneManager.LoadScene("Puzzle");
     }
 
@@ -82,7 +109,7 @@ public class PuzzleManager : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
 
-        foreach (var swap in ReplayData.SwapHistory)
+        foreach (var swap in savedSwaps)
         {
             var pieceA = pieces.Find(p => p.currentIndex == swap.Item1);
             var pieceB = pieces.Find(p => p.currentIndex == swap.Item2);
@@ -91,6 +118,7 @@ public class PuzzleManager : MonoBehaviour
             {
                 ICommand command = new SwapCommand(pieceA, pieceB);
                 command.Execute();
+
                 yield return new WaitForSeconds(1f);
             }
         }
@@ -100,7 +128,7 @@ public class PuzzleManager : MonoBehaviour
 
     public void ResetPuzzle()
     {
-        ReplayData.SwapHistory.Clear();
+        savedSwaps.Clear();
         SceneManager.LoadScene("Puzzle");
     }
 
@@ -118,6 +146,7 @@ public class PuzzleManager : MonoBehaviour
                 return;
         }
 
+        Debug.Log("Vitória detectada! Mudando para MsgVitoria");
         SceneManager.LoadScene("MsgVitoria");
     }
 }
